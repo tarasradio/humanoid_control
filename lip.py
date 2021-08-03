@@ -53,7 +53,7 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
   S = math.sinh(Tsup / Tc)
   D = a * (C - 1)**2 + b * (S / Tc)**2
 
-  CoM_path = { 't':[], 'x':[], 'vx':[], 'y':[], 'vy':[] }
+  CoM_path = { 't':[], 'x':[], 'vx':[], 'y':[], 'vy':[], 'z':[] }
   l_foot_path = { 't':[], 'x':[], 'y':[], 'z':[] }
   r_foot_path = { 't':[], 'x':[], 'y':[], 'z':[] }
 
@@ -78,45 +78,82 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
     py = - a * (C - 1) / D * (yd - C * yi - Tc * S * vyi) \
         - b * S / (Tc * D) * (vyd - S / Tc * yi - C * vyi)
 
-    plt.plot(px0, py0, 'x')
-    plt.plot(px, py, 'o')
+    # plt.plot(px0, py0, 'x')
+    # plt.plot(px, py, 'o')
 
     return px0, py0, px, py
 
-  def calc_foots_path():
-    foot_path = calc_foot_swing(t0 = T, xi = px_old, yi = py_old, xd = px0, yd = py0, swing_period = Tsup)
+  def calc_foots_path(r_foot_xi = 0, r_foot_yi = 0, l_foot_xi = 0, l_foot_yi = 0.2):
+    step = 0
+    swing_foot = 'r' # first supported foot
 
-    if n % 2 == 0:
-      r_foot_path['t'].extend(foot_path['t'])
-      r_foot_path['x'].extend(foot_path['x'])
-      r_foot_path['y'].extend(foot_path['y'])
-      r_foot_path['z'].extend(foot_path['z'])
+    def calc_support_foot_path(t0, x0, y0, z0):
+      sfp = {'t':[], 'x':[], 'y':[], 'z':[]}
+      t = 0
+      while(t < Tsup):
+        sfp['t'].append(t + t0)
+        sfp['x'].append(x0)
+        sfp['y'].append(y0)
+        sfp['z'].append(z0)
+        t += 0.01
+      return sfp
+    def extend(path, foot_path):
+      path['t'].extend(foot_path['t'])
+      path['x'].extend(foot_path['x'])
+      path['y'].extend(foot_path['y'])
+      path['z'].extend(foot_path['z'])
 
-      for i in range(0, (int)(Tsup / 0.01), 1):
-        l_foot_path['t'].append(T + 0.01*i)
-        l_foot_path['x'].append(px_old)
-        l_foot_path['y'].append(py_old)
-        l_foot_path['z'].append(0)
-    else:
-      l_foot_path['t'].extend(foot_path['t'])
-      l_foot_path['x'].extend(foot_path['x'])
-      l_foot_path['y'].extend(foot_path['y'])
-      l_foot_path['z'].extend(foot_path['z'])
+    lsp = calc_support_foot_path(0, l_foot_xi, l_foot_yi, 0)
+    rsp = calc_support_foot_path(0, r_foot_xi, r_foot_yi, 0)
 
-      for i in range(0, (int)(Tsup / 0.01), 1):
-        r_foot_path['t'].append(T + 0.01*i)
-        r_foot_path['x'].append(px_old)
-        r_foot_path['y'].append(py_old)
-        r_foot_path['z'].append(0)
+    extend(r_foot_path, rsp)
+    extend(l_foot_path, lsp)
+    t_start = 0
+    while step < 4:
+      t_start = steps['t'][step] + Tsup
+      px_start = steps['px'][step]
+      py_start = steps['py'][step]
+      px_end = steps['px'][step + 2]
+      py_end = steps['py'][step + 2]
+      
+      swing_foot_path = calc_foot_swing(t0 = t_start, xi = px_start, yi = py_start, xd = px_end, yd = py_end, swing_period = Tsup)
+      sfp = calc_support_foot_path(t_start, steps['px'][step + 1], steps['py'][step + 1], 0)
+      
+      if swing_foot == 'r':
+        extend(r_foot_path, swing_foot_path)
+        extend(l_foot_path, sfp)
+        swing_foot = 'l'
+
+      elif swing_foot == 'l':
+        extend(l_foot_path, swing_foot_path)
+        extend(r_foot_path, sfp)
+        swing_foot = 'r'
+
+      step += 1
+    
+    t_start = steps['t'][step] + Tsup
+    lsp = calc_support_foot_path(t_start, steps['px'][step + 1], steps['py'][step + 1], 0)
+    rsp = calc_support_foot_path(t_start, steps['px'][step], steps['py'][step], 0)
+
+    extend(r_foot_path, rsp)
+    extend(l_foot_path, lsp)
+
+    plt.plot(l_foot_path['t'], l_foot_path['x'])
+    plt.plot(l_foot_path['t'], l_foot_path['y'])
+
+    plt.plot(r_foot_path['t'], r_foot_path['x'])
+    plt.plot(r_foot_path['t'], r_foot_path['y'])
+    plt.show()
 
   def calc_walk_primitive(ti, dt, xi, vxi, yi, vyi):
-    walk_t = { 't':[], 'x':[], 'vx':[], 'y':[], 'vy':[] }
+    walk_t = { 't':[], 'x':[], 'vx':[], 'y':[], 'vy':[], 'z':[] }
 
-    walk_t['t'].append(ti)
-    walk_t['x'].append(xi)
-    walk_t['vx'].append(vxi)
-    walk_t['y'].append(yi)
-    walk_t['vy'].append(vyi)
+    # walk_t['t'].append(ti)
+    # walk_t['x'].append(xi)
+    # walk_t['vx'].append(vxi)
+    # walk_t['y'].append(yi)
+    # walk_t['vy'].append(vyi)
+    # walk_t['z'].append(zc)
 
     def calc_CoM_state():
       _t = t / Tc
@@ -133,6 +170,8 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
       walk_t['y'].append(calc_position(yi, vyi, py))
       walk_t['vy'].append(calc_velocity(yi, vyi, py))
 
+      walk_t['z'].append(zc)
+
       walk_t['t'].append(ti + t)
 
     t = 0
@@ -141,7 +180,7 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
       t += dt
     calc_CoM_state() # for last t
 
-    plt.plot(walk_t['x'], walk_t['y'])
+    # plt.plot(walk_t['x'], walk_t['y'])
     # plt.plot(walk_t['t'], walk_t['y'])
     # plt.plot(walk_t['x'], walk_t['y'])
 
@@ -160,6 +199,7 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
     CoM_path['vx'].extend(walk_primitive['vx'])
     CoM_path['y'].extend(walk_primitive['y'])
     CoM_path['vy'].extend(walk_primitive['vy'])
+    CoM_path['z'].extend(walk_primitive['z'])
 
     ## update xi, yi, vxi, vyi for the next step
     xi = walk_primitive['x'][-1]
@@ -170,61 +210,60 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
     ## update n, the order number of the step
     n += 1; 
 
-    px_old = px0; py_old = py0
-
     if n < len(sx):
       px0, py0, px, py = calc_foot_place(px0, py0, px, py); # calculate the actual foot place for step n
-    
-    calc_foots_path()
-    
     T += Tsup
+
+  calc_foots_path()
 
   # plt.plot(CoM_trajectory['x'], CoM_trajectory['y'])
   # plt.plot(l_foot_trajectory['t'], l_foot_trajectory['z'])
   # plt.plot(r_foot_trajectory['t'], r_foot_trajectory['z'])
-  plt.show()
+  # plt.show()
 
-  def save_paths():
-    # Save trajectories in files
-    ## Save CoM trajectory
-    f = open('results/CoM_trajectory.txt', 'w')
-    f.write('TIME\tCoM_x\tCoM_y\tCoM_z\n')
-
-    i = 0
-    for i in range(0, len(CoM_path['t'])) :
-      f.write(str(CoM_path['t'][i]) + '\t')
-      f.write(str(CoM_path['x'][i]) +  '\t')
-      f.write(str(CoM_path['y'][i]) + '\t')
-      f.write(str(zc) + '\n')
-    f.close()
-
-    ## Save left foot trajectory
-    f = open('results/l_foot_trajectory.txt', 'w')
-    f.write('TIME\tl_foot_x\tl_foot_y\tl_foot_z\n')
-
-    i = 0
-    for i in range(0, len(l_foot_path['t'])) :
-      f.write(str(l_foot_path['t'][i]) + '\t')
-      f.write(str(l_foot_path['x'][i]) +  '\t')
-      f.write(str(l_foot_path['y'][i]) + '\t')
-      f.write(str(l_foot_path['z'][i]) + '\n')
-    f.close()
-
-    ## Save right foot trajectory
-    f = open('results/r_foot_trajectory.txt', 'w')
-    f.write('TIME\tr_foot_x\tr_foot_y\tr_foot_z\n')
-
-    i = 0
-    for i in range(0, len(r_foot_path['t'])) :
-      f.write(str(r_foot_path['t'][i]) + '\t')
-      f.write(str(r_foot_path['x'][i]) +  '\t')
-      f.write(str(r_foot_path['y'][i]) + '\t')
-      f.write(str(r_foot_path['z'][i]) + '\n')
-    f.close()
-  
-  # save_paths()
+  return CoM_path, l_foot_path, r_foot_path
 
 sx = [0.0, 0.3, 0.3, 0.3, 0.0]
 sy = [0.2, 0.2, 0.2, 0.2, 0.2]
 
-LIP(0.8, 0.8, sx, sy, 0, 0, 0, 0, 0, 0, 10, 1)
+CoM_path, l_foot_path, r_foot_path = LIP(0.8, 0.8, sx, sy, 0, 0, 0, 0, 0, 0, 10, 1)
+
+def save_paths():
+  # Save trajectories in files
+  ## Save CoM trajectory
+  f = open('results/CoM_trajectory.txt', 'w')
+  f.write('TIME\tCoM_x\tCoM_y\tCoM_z\n')
+
+  i = 0
+  for i in range(0, len(CoM_path['t'])) :
+    f.write(str(CoM_path['t'][i]) + '\t')
+    f.write(str(CoM_path['x'][i]) +  '\t')
+    f.write(str(CoM_path['y'][i]) + '\t')
+    f.write(str(CoM_path['z'][i]) + '\n')
+  f.close()
+
+  ## Save left foot trajectory
+  f = open('results/l_foot_trajectory.txt', 'w')
+  f.write('TIME\tl_foot_x\tl_foot_y\tl_foot_z\n')
+
+  i = 0
+  for i in range(0, len(l_foot_path['t'])) :
+    f.write(str(l_foot_path['t'][i]) + '\t')
+    f.write(str(l_foot_path['x'][i]) +  '\t')
+    f.write(str(l_foot_path['y'][i]) + '\t')
+    f.write(str(l_foot_path['z'][i]) + '\n')
+  f.close()
+
+  ## Save right foot trajectory
+  f = open('results/r_foot_trajectory.txt', 'w')
+  f.write('TIME\tr_foot_x\tr_foot_y\tr_foot_z\n')
+
+  i = 0
+  for i in range(0, len(r_foot_path['t'])) :
+    f.write(str(r_foot_path['t'][i]) + '\t')
+    f.write(str(r_foot_path['x'][i]) +  '\t')
+    f.write(str(r_foot_path['y'][i]) + '\t')
+    f.write(str(r_foot_path['z'][i]) + '\n')
+  f.close()
+
+save_paths()
