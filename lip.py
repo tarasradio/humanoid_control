@@ -83,60 +83,7 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
 
     return px0, py0, px, py
 
-  def calc_walk_primitive(ti, dt, xi, vxi, yi, vyi):
-    walk_t = { 't':[], 'x':[], 'vx':[], 'y':[], 'vy':[] }
-
-    walk_t['t'].append(ti)
-    walk_t['x'].append(xi)
-    walk_t['vx'].append(vxi)
-    walk_t['y'].append(yi)
-    walk_t['vy'].append(vyi)
-
-    t = 0
-    while t <= Tsup:
-      _t = t / Tc
-
-      walk_t['x'].append((xi - px) * math.cosh(_t) + Tc * vxi * math.sinh(_t) + px)
-      walk_t['vx'].append((xi - px) / Tc * math.sinh(_t) + vxi * math.cosh(_t))
-
-      walk_t['y'].append((yi - py) * math.cosh(_t) + Tc * vyi * math.sinh(_t) + py)
-      walk_t['vy'].append((yi - py) / Tc * math.sinh(_t) + vyi * math.cosh(_t))
-
-      walk_t['t'].append(ti + t)
-
-      t += dt
-    plt.plot(walk_t['x'], walk_t['y'])
-
-    return walk_t
-
-  T = 0
-
-  px0, py0, px, py = calc_foot_place(px0, py0, px, py) # set the initial placement of foot
-  ## carry out the steps indicated by walk parameters sx, sy
-  while n < len(sx): # sx was expanded by one element previously
-    ## plot the n-th step trajectory
-    walk_primitive = calc_walk_primitive(T, 0.01, xi, vxi, yi, vyi)
-
-    CoM_path['t'].extend(walk_primitive['t'])
-    CoM_path['x'].extend(walk_primitive['x'])
-    CoM_path['vx'].extend(walk_primitive['vx'])
-    CoM_path['y'].extend(walk_primitive['y'])
-    CoM_path['vy'].extend(walk_primitive['vy'])
-
-    xi = walk_primitive['x'][-1]
-    vxi = walk_primitive['vx'][-1]
-    yi = walk_primitive['y'][-1]
-    vyi = walk_primitive['vy'][-1]
-    ## and update xi, yi, vxi, vyi for the next step
-    
-    ## update n, the order number of the step
-    n += 1; 
-
-    px_old = px0; py_old = py0
-
-    if n < len(sx):
-      px0, py0, px, py = calc_foot_place(px0, py0, px, py); # calculate the actual foot place for step n
-    
+  def calc_foots_path():
     foot_path = calc_foot_swing(t0 = T, xi = px_old, yi = py_old, xd = px0, yd = py0, swing_period = Tsup)
 
     if n % 2 == 0:
@@ -161,10 +108,76 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
         r_foot_path['x'].append(px_old)
         r_foot_path['y'].append(py_old)
         r_foot_path['z'].append(0)
+
+  def calc_walk_primitive(ti, dt, xi, vxi, yi, vyi):
+    walk_t = { 't':[], 'x':[], 'vx':[], 'y':[], 'vy':[] }
+
+    walk_t['t'].append(ti)
+    walk_t['x'].append(xi)
+    walk_t['vx'].append(vxi)
+    walk_t['y'].append(yi)
+    walk_t['vy'].append(vyi)
+
+    def calc_CoM_state():
+      _t = t / Tc
+
+      def calc_position(p, v, fp):
+        return (p - fp) * math.cosh(_t) + Tc * v * math.sinh(_t) + fp
+      
+      def calc_velocity(p, v, fp):
+        return (p - fp) / Tc * math.sinh(_t) + v * math.cosh(_t)
+
+      walk_t['x'].append(calc_position(xi, vxi, px))
+      walk_t['vx'].append(calc_velocity(xi, vxi, px))
+
+      walk_t['y'].append(calc_position(yi, vyi, py))
+      walk_t['vy'].append(calc_velocity(yi, vyi, py))
+
+      walk_t['t'].append(ti + t)
+
+    t = 0
+    while t < Tsup:
+      calc_CoM_state()
+      t += dt
+    calc_CoM_state() # for last t
+
+    plt.plot(walk_t['x'], walk_t['y'])
+    # plt.plot(walk_t['t'], walk_t['y'])
+    # plt.plot(walk_t['x'], walk_t['y'])
+
+    return walk_t
+
+  T = 0
+
+  px0, py0, px, py = calc_foot_place(px0, py0, px, py) # set the initial placement of foot
+  ## carry out the steps indicated by walk parameters sx, sy
+  while n < len(sx): # sx was expanded by one element previously
+    ## plot the n-th step trajectory
+    walk_primitive = calc_walk_primitive(T, 0.01, xi, vxi, yi, vyi)
+
+    CoM_path['t'].extend(walk_primitive['t'])
+    CoM_path['x'].extend(walk_primitive['x'])
+    CoM_path['vx'].extend(walk_primitive['vx'])
+    CoM_path['y'].extend(walk_primitive['y'])
+    CoM_path['vy'].extend(walk_primitive['vy'])
+
+    ## update xi, yi, vxi, vyi for the next step
+    xi = walk_primitive['x'][-1]
+    vxi = walk_primitive['vx'][-1]
+    yi = walk_primitive['y'][-1]
+    vyi = walk_primitive['vy'][-1]
+    
+    ## update n, the order number of the step
+    n += 1; 
+
+    px_old = px0; py_old = py0
+
+    if n < len(sx):
+      px0, py0, px, py = calc_foot_place(px0, py0, px, py); # calculate the actual foot place for step n
+    
+    calc_foots_path()
     
     T += Tsup
-
-  
 
   # plt.plot(CoM_trajectory['x'], CoM_trajectory['y'])
   # plt.plot(l_foot_trajectory['t'], l_foot_trajectory['z'])
@@ -209,7 +222,7 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
       f.write(str(r_foot_path['z'][i]) + '\n')
     f.close()
   
-  save_paths()
+  # save_paths()
 
 sx = [0.0, 0.3, 0.3, 0.3, 0.0]
 sy = [0.2, 0.2, 0.2, 0.2, 0.2]
