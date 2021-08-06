@@ -78,8 +78,8 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
     py = - a * (C - 1) / D * (yd - C * yi - Tc * S * vyi) \
         - b * S / (Tc * D) * (vyd - S / Tc * yi - C * vyi)
 
-    # plt.plot(px0, py0, 'x')
-    # plt.plot(px, py, 'o')
+    plt.plot(px0, py0, 'x')
+    plt.plot(px, py, 'o')
 
     return px0, py0, px, py
 
@@ -138,12 +138,12 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
     extend(r_foot_path, rsp)
     extend(l_foot_path, lsp)
 
-    plt.plot(l_foot_path['t'], l_foot_path['x'])
-    plt.plot(l_foot_path['t'], l_foot_path['y'])
+    # plt.plot(l_foot_path['t'], l_foot_path['x'])
+    # plt.plot(l_foot_path['t'], l_foot_path['y'])
 
-    plt.plot(r_foot_path['t'], r_foot_path['x'])
-    plt.plot(r_foot_path['t'], r_foot_path['y'])
-    plt.show()
+    # plt.plot(r_foot_path['t'], r_foot_path['x'])
+    # plt.plot(r_foot_path['t'], r_foot_path['y'])
+    # plt.show()
 
   def calc_walk_primitive(ti, dt, xi, vxi, yi, vyi):
     walk_t = { 't':[], 'x':[], 'vx':[], 'y':[], 'vy':[], 'z':[] }
@@ -180,7 +180,7 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
       t += dt
     calc_CoM_state() # for last t
 
-    # plt.plot(walk_t['x'], walk_t['y'])
+    plt.plot(walk_t['x'], walk_t['y'])
     # plt.plot(walk_t['t'], walk_t['y'])
     # plt.plot(walk_t['x'], walk_t['y'])
 
@@ -219,14 +219,16 @@ def LIP(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
   # plt.plot(CoM_trajectory['x'], CoM_trajectory['y'])
   # plt.plot(l_foot_trajectory['t'], l_foot_trajectory['z'])
   # plt.plot(r_foot_trajectory['t'], r_foot_trajectory['z'])
-  # plt.show()
+  plt.show()
 
   return CoM_path, l_foot_path, r_foot_path
 
 sx = [0.0, 0.3, 0.3, 0.3, 0.0]
 sy = [0.2, 0.2, 0.2, 0.2, 0.2]
 
-CoM_path, l_foot_path, r_foot_path = LIP(0.8, 0.8, sx, sy, 0, 0, 0, 0, 0, 0, 10, 1)
+CoM_z = 0.28 + 0.28 + 0.102 - 0.231
+
+CoM_path, l_foot_path, r_foot_path = LIP(CoM_z - 0.1, 0.8, sx, sy, 0, 0, 0, 0, 0, 0, 10, 1)
 
 def save_paths():
   # Save trajectories in files

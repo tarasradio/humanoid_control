@@ -59,3 +59,15 @@ def calc_leg_joints(body, D, A, B, foot):
   q4 = math.atan2(-R[2, 0], R[2, 2]); 
 
   return q2, q3, q4, q5, q6, q7
+
+def check_leg_joints(joints):
+  roll_sum = joints[1] + joints[5]
+  pitch_sum = joints[2] + joints[3] + joints[4]
+  if math.isclose(roll_sum, 0, abs_tol=0.001):
+    if math.isclose(pitch_sum, 0, abs_tol=0.001):
+      print("Joints are correct.")
+    else:
+      print("Pitch joints are incorrect.")
+  else:
+      print("Roll joints are incorrect.")
+
