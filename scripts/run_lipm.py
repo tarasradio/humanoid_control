@@ -46,19 +46,19 @@ def write_trajectory(f:TextIOWrapper, trajectory):
 def save_trajectories():
   # Save trajectories in files
   ## Save CoM trajectory
-  f = open('results/CoM_trajectory.txt', 'w')
+  f = open('./results/CoM_trajectory.txt', 'w')
   f.write('TIME\tCoM_x\tCoM_y\tCoM_z\n')
 
   write_trajectory(f, CoM_t)
 
   ## Save left foot trajectory
-  f = open('results/l_foot_trajectory.txt', 'w')
+  f = open('./results/l_foot_trajectory.txt', 'w')
   f.write('TIME\tl_foot_x\tl_foot_y\tl_foot_z\n')
 
   write_trajectory(f, l_foot_t)
 
   ## Save right foot trajectory
-  f = open('results/r_foot_trajectory.txt', 'w')
+  f = open('./results/r_foot_trajectory.txt', 'w')
   f.write('TIME\tr_foot_x\tr_foot_y\tr_foot_z\n')
 
   write_trajectory(f, r_foot_t)
