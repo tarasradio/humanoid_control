@@ -4,6 +4,7 @@ import math
 import matplotlib.pyplot as plt
 
 from foot_trajectories import foot_swing_trajectory, foot_support_trajectory, foot_swing_trajectory_magid
+from footsteps_generator import calc_steps
 
 def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
   # zc, Tsup: z-axis intersection; support time
@@ -16,35 +17,9 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
   ## Initialization
   n = 0
   g = 9.8
-
-  # the step after the last step should be zero
-  sx.append(0)
-  sy.append(0) 
-
-  def calc_steps(sx, sy, xi, yi, Tsup):
-    steps = { 't':[], 'px':[], 'py':[] }
-    n_steps = len(sx)
-    n = 0; t = 0.
-    px = xi; py = yi
-
-    while n < n_steps:
-      steps['t'].append(t)
-      ## calculate the desired foot place during the n-th step
-      if n != 0:
-        px = px + sx[n-1]
-        py = py - (-1)**n * sy[n-1]
-      steps['px'].append(px)
-      steps['py'].append(py)
-      t += Tsup
-      n += 1
-      
-    return steps
   
-   # Calc steps for all legs
+  # Calc steps for all legs
   steps = calc_steps(sx, sy, 0, 0, Tsup)
-
-  # plt.plot(steps['px'], steps['py'], 'x')
-  # plt.show()
 
   # desired foot placement
   px0 = px
@@ -85,21 +60,21 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
 
     return px0, py0, px, py
 
-  def calc_foots_path(r_foot_xi = 0, r_foot_yi = 0, l_foot_xi = 0, l_foot_yi = 0.2):
+  def calc_foots_trajectories(r_foot_xi, r_foot_yi, l_foot_xi, l_foot_yi):
     step = 0
-    swing_foot = 'r' # first supported foot
+    supported_foot = 'r' # first supported foot
 
-    def extend(path, foot_path):
-      path['t'].extend(foot_path['t'])
-      path['x'].extend(foot_path['x'])
-      path['y'].extend(foot_path['y'])
-      path['z'].extend(foot_path['z'])
+    def extend(trajectory, next_part):
+      trajectory['t'].extend(next_part['t'])
+      trajectory['x'].extend(next_part['x'])
+      trajectory['y'].extend(next_part['y'])
+      trajectory['z'].extend(next_part['z'])
 
-    lsp = foot_support_trajectory(0, l_foot_xi, l_foot_yi, 0, Tsup)
-    rsp = foot_support_trajectory(0, r_foot_xi, r_foot_yi, 0, Tsup)
+    lst = foot_support_trajectory(0, l_foot_xi, l_foot_yi, 0, Tsup)
+    rst = foot_support_trajectory(0, r_foot_xi, r_foot_yi, 0, Tsup)
 
-    extend(r_foot_trajectory, rsp)
-    extend(l_foot_trajectory, lsp)
+    extend(r_foot_trajectory, rst)
+    extend(l_foot_trajectory, lst)
 
     t_start = 0
 
@@ -111,23 +86,22 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
       px_end = steps['px'][step + 2]
       py_end = steps['py'][step + 2]
       
-      swing_foot_path = foot_swing_trajectory_magid(t_start, px_start, py_start, px_end, py_end, Tsup, 0.05)
+      swing_trajectory = foot_swing_trajectory_magid(t_start, px_start, py_start, px_end, py_end, Tsup, 0.05)
 
       s_xi = steps['px'][step + 1]
       s_yi = steps['py'][step + 1]
       s_zi = 0
 
-      sfp = foot_support_trajectory(t_start, s_xi, s_yi, s_zi, Tsup)
+      support_trajectory = foot_support_trajectory(t_start, s_xi, s_yi, s_zi, Tsup)
       
-      if swing_foot == 'r':
-        extend(r_foot_trajectory, swing_foot_path)
-        extend(l_foot_trajectory, sfp)
-        swing_foot = 'l'
-
-      elif swing_foot == 'l':
-        extend(l_foot_trajectory, swing_foot_path)
-        extend(r_foot_trajectory, sfp)
-        swing_foot = 'r'
+      if supported_foot == 'l':
+        extend(r_foot_trajectory, swing_trajectory)
+        extend(l_foot_trajectory, support_trajectory)
+        supported_foot = 'r'
+      elif supported_foot == 'r':
+        extend(l_foot_trajectory, swing_trajectory)
+        extend(r_foot_trajectory, support_trajectory)
+        supported_foot = 'l'
 
       step += 1
     
@@ -137,23 +111,16 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
     l_yi = steps['py'][step + 1]; r_yi = steps['py'][step]
     l_zi = 0; r_zi = 0
 
-    lsp = foot_support_trajectory(t_start, l_xi, l_yi, l_zi, Tsup)
-    rsp = foot_support_trajectory(t_start, r_xi, r_yi, r_zi, Tsup)
+    lst = foot_support_trajectory(t_start, l_xi, l_yi, l_zi, Tsup)
+    rst = foot_support_trajectory(t_start, r_xi, r_yi, r_zi, Tsup)
 
-    extend(r_foot_trajectory, rsp)
-    extend(l_foot_trajectory, lsp)
-
-    # plt.plot(l_foot_path['t'], l_foot_path['x'])
-    # plt.plot(l_foot_path['t'], l_foot_path['y'])
-
-    # plt.plot(r_foot_path['t'], r_foot_path['x'])
-    # plt.plot(r_foot_path['t'], r_foot_path['y'])
-    # plt.show()
+    extend(r_foot_trajectory, rst)
+    extend(l_foot_trajectory, lst)
 
   def calc_walk_primitive(ti, dt, xi, vxi, yi, vyi):
     walk_t = { 't':[], 'x':[], 'vx':[], 'y':[], 'vy':[], 'z':[] }
 
-    def next_CoM_state(t):
+    def next_CoM_trajectory(t):
       _t = t / Tc
 
       def calc_position(p, v, fp):
@@ -169,7 +136,7 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
               zc, \
               t + ti
 
-    def append_CoM_state(x, vx, y, vy, z, t):
+    def append_CoM_trajectory(x, vx, y, vy, z, t):
       walk_t['x'].append(x)
       walk_t['vx'].append(vx)
       walk_t['y'].append(y)
@@ -178,19 +145,19 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
       walk_t['t'].append(t)
 
     for t in np.arange(0, Tsup, dt):
-      state = next_CoM_state(t)
-      append_CoM_state(*state)
-    final_state = next_CoM_state(Tsup)
+      trajectory = next_CoM_trajectory(t)
+      append_CoM_trajectory(*trajectory)
+    
+    final_conditions = next_CoM_trajectory(Tsup)
 
-    return walk_t, final_state
+    return walk_t, final_conditions
 
   T = 0
 
   px0, py0, px, py = calc_foot_place(px0, py0, px, py) # set the initial placement of foot
   ## carry out the steps indicated by walk parameters sx, sy
   while n < len(sx): # sx was expanded by one element previously
-    ## plot the n-th step trajectory
-    walk_primitive, final_state = calc_walk_primitive(T, 0.01, xi, vxi, yi, vyi)
+    walk_primitive, final_conditions = calc_walk_primitive(T, 0.01, xi, vxi, yi, vyi)
 
     CoM_trajectory['t'].extend(walk_primitive['t'])
     CoM_trajectory['x'].extend(walk_primitive['x'])
@@ -199,19 +166,17 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
     CoM_trajectory['vy'].extend(walk_primitive['vy'])
     CoM_trajectory['z'].extend(walk_primitive['z'])
 
-    ## update xi, yi, vxi, vyi for the next step
-    xi = final_state[0]
-    vxi = final_state[1]
-    yi = final_state[2]
-    vyi = final_state[3]
+    xi = final_conditions[0]
+    vxi = final_conditions[1]
+    yi = final_conditions[2]
+    vyi = final_conditions[3]
     
-    ## update n, the order number of the step
     n += 1; 
 
     if n < len(sx):
       px0, py0, px, py = calc_foot_place(px0, py0, px, py); # calculate the actual foot place for step n
     T += Tsup
-
-  calc_foots_path()
+  
+  calc_foots_trajectories(steps['px'][0], steps['py'][0], steps['px'][1], steps['py'][1])
 
   return CoM_trajectory, l_foot_trajectory, r_foot_trajectory
