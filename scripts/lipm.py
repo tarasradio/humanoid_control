@@ -94,14 +94,14 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
 
       support_trajectory = foot_support_trajectory(t_start, s_xi, s_yi, s_zi, Tsup)
       
-      if supported_foot == 'l':
+      if supported_foot == 'r':
         extend(r_foot_trajectory, swing_trajectory)
         extend(l_foot_trajectory, support_trajectory)
-        supported_foot = 'r'
-      elif supported_foot == 'r':
+        supported_foot = 'l'
+      elif supported_foot == 'l':
         extend(l_foot_trajectory, swing_trajectory)
         extend(r_foot_trajectory, support_trajectory)
-        supported_foot = 'l'
+        supported_foot = 'r'
 
       step += 1
     

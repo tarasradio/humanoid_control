@@ -39,11 +39,13 @@ def foot_swing_trajectory_magid(t0, xi, yi, xd, yd, step_period, step_height = 0
   x = xi; y = yi; z = 0
 
   step_length = xd - xi
+  step_width = yd - yi
 
   def next_position(t):
     phase =  (t - t0) / (step_period)
     z = 0.5 * step_height * (1 - math.cos(2 * math.pi * phase))
     x = xi + 0.5 * step_length * (1 - math.cos(math.pi * phase))
+    y = yi + 0.5 * step_width * (1 - math.cos(math.pi * phase))
 
     trajectory['t'].append(t)
     trajectory['x'].append(x)

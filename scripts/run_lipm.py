@@ -7,8 +7,11 @@ import matplotlib.ticker as ticker
 
 from lipm import lipm
 
-sx = [0.0, 0.3, 0.3, 0.3, 0.0]
-sy = [0.2, 0.2, 0.2, 0.2, 0.2]
+# sx = [0.0, 0.3, 0.3, 0.3, 0.0]
+# sy = [0.2, 0.2, 0.2, 0.2, 0.2]
+
+sx = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+sy = [0.4, 0.2, 0.4, 0.2, 0.4, 0.2, 0.4, 0.2, 0.4]
 
 CoM_z = 0.28 + 0.28 + 0.102 - 0.231
 
@@ -22,9 +25,9 @@ def plot_trajectories():
   plt.xlabel("t, sec") # ось абсцисс
   plt.ylabel("x, meters") # ось ординат
 
-  ax.plot(CoM_t['t'], CoM_t['x'], 'r--', label="CoM (x)")
-  ax.plot(l_foot_t['t'], l_foot_t['x'], label="Left foot (x)")
-  ax.plot(r_foot_t['t'], r_foot_t['x'], label="Right foot (x)")
+  ax.plot(CoM_t['t'], CoM_t['y'], 'r--', label="CoM (y)")
+  ax.plot(l_foot_t['t'], l_foot_t['y'], label="Left foot (y)")
+  ax.plot(r_foot_t['t'], r_foot_t['y'], label="Right foot (y)")
   ax.plot(l_foot_t['t'], l_foot_t['z'], label="Left foot (z)")
   ax.plot(r_foot_t['t'], r_foot_t['z'], label="Right foot (z)")
 
