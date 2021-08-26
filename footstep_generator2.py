@@ -1,5 +1,4 @@
 from numpy.lib.function_base import angle
-from footStep import *
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
@@ -9,7 +8,7 @@ import numpy as np
 footLength = 0.25; footWidth = 0.1
 
 def drawFootprint(ax, x, y, theta, leg):
-  if leg == Side.Left:
+  if leg == 0:
     edgecolor = 'b'
   else:
     edgecolor = 'r'
@@ -53,11 +52,11 @@ def generate_footsteps(s_l, s_w):
       if i % 2 == fLeg:
         x += -r * math.cos(-angle + rotation)
         y += r * math.sin(-angle + rotation)
-        drawFootprint(ax, x, y, angle + math.pi / 2, Side.Left)
+        drawFootprint(ax, x, y, angle + math.pi / 2, 0)
       else:
         x += r * math.cos(angle + rotation)
         y += r * math.sin(angle + rotation)
-        drawFootprint(ax, x, y, angle + math.pi / 2, Side.Right)
+        drawFootprint(ax, x, y, angle + math.pi / 2, 1)
       fs_array['x'].append(x)
       fs_array['y'].append(y)
 
