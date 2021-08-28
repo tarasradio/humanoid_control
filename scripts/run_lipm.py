@@ -10,12 +10,34 @@ from lipm import lipm
 # sx = [0.0, 0.3, 0.3, 0.3, 0.0]
 # sy = [0.2, 0.2, 0.2, 0.2, 0.2]
 
-sx = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-sy = [0.4, 0.2, 0.4, 0.2, 0.4, 0.2, 0.4, 0.2, 0.4]
+sx = [0.0, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.0]
+sy = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]
+st = [0, 15, 30, 45, 60, 75, 90, 105, 105 ]
 
 CoM_z = 0.28 + 0.28 + 0.102 - 0.231
+CoM_z_offset = 0.05
 
-CoM_t, l_foot_t, r_foot_t = lipm(CoM_z - 0.1, 0.8, sx, sy, 0, 0, 0, 0, 0, 0, 10, 1)
+Tsup = 0.8
+
+fig, ax = plt.subplots()
+CoM_t, l_foot_t, r_foot_t, steps = lipm(CoM_z - CoM_z_offset, Tsup, sx, sy, st, 0, 0, 0, 0, 0, 0, 10, 1)
+
+def plot_CoM_path():
+  plt.title("Траектория ц.м. (x, y) и стоп робота (x, y).")
+
+  plt.xlabel("x, meters") # ось абсцисс
+  plt.ylabel("y, meters") # ось ординат
+
+  ax.plot(CoM_t['x'], CoM_t['y'], 'r--', label="CoM (x, y)")
+  ax.plot(steps['px'], steps['py'], 'x')
+
+  ax.legend()
+
+  plt.axis("equal")
+
+  ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%0.1f'))
+
+  plt.show()
 
 def plot_trajectories():
   fig, ax = plt.subplots()
@@ -25,13 +47,14 @@ def plot_trajectories():
   plt.xlabel("t, sec") # ось абсцисс
   plt.ylabel("x, meters") # ось ординат
 
-  ax.plot(CoM_t['t'], CoM_t['y'], 'r--', label="CoM (y)")
-  ax.plot(l_foot_t['t'], l_foot_t['y'], label="Left foot (y)")
-  ax.plot(r_foot_t['t'], r_foot_t['y'], label="Right foot (y)")
-  ax.plot(l_foot_t['t'], l_foot_t['z'], label="Left foot (z)")
-  ax.plot(r_foot_t['t'], r_foot_t['z'], label="Right foot (z)")
+  ax.plot(CoM_t['x'], CoM_t['y'], 'r--', label="CoM (y)")
+  ax.plot(l_foot_t['x'], l_foot_t['y'], label="Left foot (y)")
+  ax.plot(r_foot_t['x'], r_foot_t['y'], label="Right foot (y)")
+  # ax.plot(l_foot_t['t'], l_foot_t['z'], label="Left foot (z)")
+  # ax.plot(r_foot_t['t'], r_foot_t['z'], label="Right foot (z)")
 
   ax.legend()
+  plt.axis("equal")
 
   ax.xaxis.set_major_formatter(ticker.FormatStrFormatter('%0.1f'))
 
@@ -66,5 +89,6 @@ def save_trajectories():
 
   write_trajectory(f, r_foot_t)
 
+plot_CoM_path()
 plot_trajectories()
-save_trajectories()
+# save_trajectories()

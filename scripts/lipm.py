@@ -3,12 +3,12 @@ import numpy as np
 import math
 import matplotlib.pyplot as plt
 
-from foot_trajectories import foot_swing_trajectory, foot_support_trajectory, foot_swing_trajectory_magid
+from foot_trajectories import foot_support_trajectory, foot_swing_trajectory_magid
 from footsteps_generator import calc_steps
 
-def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
+def lipm(zc, Tsup, sx, sy, st, xi, yi, vxi, vyi, px, py, a, b):
   # zc, Tsup: z-axis intersection; support time
-  # sx, sy: walk parameters(vectors)
+  # sx, sy, st: walk parameters(vectors)
   # xi, yi: initial CoM coordinates
   # px, py: initial foot placement
   # vxi, vyi: initial CoM velocity
@@ -19,7 +19,7 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
   g = 9.8
   
   # Calc steps for all legs
-  steps = calc_steps(sx, sy, 0, 0, Tsup)
+  steps = calc_steps(sx, sy, st, 0, 0, Tsup)
 
   # desired foot placement
   px0 = px
@@ -34,31 +34,42 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
   l_foot_trajectory = { 't':[], 'x':[], 'y':[], 'z':[] }
   r_foot_trajectory = { 't':[], 'x':[], 'y':[], 'z':[] }
 
-  def calc_foot_place(px0, py0, px, py):
+  def calc_foot_place(px0, py0):
     px0 = steps['px'][n]
     py0 = steps['py'][n]
 
     ## calculate the coordinate (xbar, ybar)
+  
+    s = math.sin(math.radians(st[n]))
+    c = math.cos(math.radians(st[n]))
+
+    bar_rotation = np.array([[c, -s], [s, c]])
+    
     xbar = sx[n] / 2
-    ybar = (-1)**n * sy[n] / 2
-    vxbar = (C + 1) / (Tc * S) * xbar
-    vybar = (C - 1) / (Tc * S) * ybar
+    ybar = -(-1)**(n-1) * sy[n] / 2
+
+    bar_position = np.array([xbar, ybar])
+    
+    bar = bar_rotation.dot(bar_position)
+
+    vxbar = (C + 1) / (Tc * S) * bar[0]
+    vybar = (C - 1) / (Tc * S) * bar[1]
+
     ## target state of CoM, of the n-th step
-    xd = px0 + xbar
-    yd = py0 + ybar
+    xd = px0 + bar[0]
+    yd = py0 + bar[1]
     vxd = vxbar
     vyd = vybar
+
     ## update px, py to be the real foot place in step n
     # a, b are parameters for cost func
-    px = - a * (C - 1) / D * (xd - C * xi - Tc * S * vxi) \
+    px = - (a * (C - 1) / D) * (xd - C * xi - Tc * S * vxi) \
         - b * S / (Tc * D) * (vxd - S / Tc * xi - C * vxi)
-    py = - a * (C - 1) / D * (yd - C * yi - Tc * S * vyi) \
+
+    py = - (a * (C - 1) / D) * (yd - C * yi - Tc * S * vyi) \
         - b * S / (Tc * D) * (vyd - S / Tc * yi - C * vyi)
 
-    # plt.plot(px0, py0, 'x')
-    # plt.plot(px, py, 'o')
-
-    return px0, py0, px, py
+    return (px0, py0, px, py)
 
   def calc_foots_trajectories(r_foot_xi, r_foot_yi, l_foot_xi, l_foot_yi):
     step = 0
@@ -154,7 +165,7 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
 
   T = 0
 
-  px0, py0, px, py = calc_foot_place(px0, py0, px, py) # set the initial placement of foot
+  px0, py0, px, py = calc_foot_place(px0, py0) # set the initial placement of foot
   ## carry out the steps indicated by walk parameters sx, sy
   while n < len(sx): # sx was expanded by one element previously
     walk_primitive, final_conditions = calc_walk_primitive(T, 0.01, xi, vxi, yi, vyi)
@@ -174,9 +185,9 @@ def lipm(zc, Tsup, sx, sy, xi, yi, vxi, vyi, px, py, a, b):
     n += 1; 
 
     if n < len(sx):
-      px0, py0, px, py = calc_foot_place(px0, py0, px, py); # calculate the actual foot place for step n
+      px0, py0, px, py = calc_foot_place(px0, py0); # calculate the actual foot place for step n
     T += Tsup
   
   calc_foots_trajectories(steps['px'][0], steps['py'][0], steps['px'][1], steps['py'][1])
 
-  return CoM_trajectory, l_foot_trajectory, r_foot_trajectory
+  return CoM_trajectory, l_foot_trajectory, r_foot_trajectory, steps
